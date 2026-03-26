@@ -1,0 +1,33 @@
+# Podman: podman-compose up -d
+# Docker: docker compose up -d
+# Same file works with both.
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: "0.0.0.0"
+      MONGODB_URI: mongodb://mongo:27017/fitness_goal_system
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      SERVE_CLIENT: "true"
+      # CORS: allow host access on Mac/Windows (localhost + 127.0.0.1)
+      CORS_ORIGINS: "http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173"
+    depends_on:
+      mongo:
+        condition: service_started
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data: {}
