@@ -14,7 +14,8 @@ const updateProfileSchema = z.object({
   }).optional(),
   bodyType: z.enum(['ectomorph', 'mesomorph', 'endomorph']).optional(),
   athleticismLevel: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
-  exerciseModality: z.enum(['gym', 'yoga', 'home_workout', 'cardio', 'mixed']).optional(),
+  exerciseModality: z.enum(['gym', 'yoga', 'home_workout', 'cardio', 'aerobics', 'mixed']).optional(),
+  availableEquipment: z.array(z.string()).optional(),
   dietaryPreferences: z.object({
     dietType: z.enum(['vegetarian', 'vegan', 'pescatarian', 'none']).optional(),
     allergies: z.array(z.string()).optional(),
@@ -63,6 +64,7 @@ const updateProfileSchema = z.object({
 
 const PROFILE_FIELDS = [
   'onboardingCompleted', 'bodyMetrics', 'bodyType', 'athleticismLevel', 'exerciseModality',
+  'availableEquipment',
   'dietaryPreferences', 'foodsToAvoid', 'preferredFoodType', 'dailyWaterIntakeL',
   'fitnessGoals', 'workHours', 'workIntensity', 'sleepSchedule',
   'preferredWorkoutTime', 'energyLevelPreference', 'weekendAvailability',

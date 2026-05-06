@@ -1,6 +1,6 @@
 import type { IUserProfile } from '../models/UserProfile.js';
 import type { IBusySlot, IScheduledActivity } from '../models/Schedule.js';
-import { ScheduleModel } from '../models/Schedule.js';
+import { ScheduleModel, computeScheduleStatus } from '../models/Schedule.js';
 import { runScheduler, buildDayConstraints } from './scheduler/constraintScheduler.js';
 import type { ActivityToSchedule } from './scheduler/types.js';
 import {
@@ -37,7 +37,8 @@ export async function recalculateDaySchedule(
   userId: string,
   date: string,
   profile: IUserProfile,
-  busySlots: IBusySlot[]
+  busySlots: IBusySlot[],
+  reason: string = 'recalculate'
 ): Promise<IScheduledActivity[]> {
   const dayOfWeek = new Date(date + 'T12:00:00').getDay();
   const blockedRanges: Array<{ start: string; end: string }> = [];
@@ -179,21 +180,28 @@ export async function recalculateDaySchedule(
 
   await ScheduleModel.findOneAndUpdate(
     { userId, date },
-    { $set: { busySlots, scheduledActivities: scheduled } },
+    {
+      $set: {
+        busySlots,
+        scheduledActivities: scheduled,
+        status: computeScheduleStatus(scheduled),
+      },
+      $push: { reschedulingHistory: { at: new Date(), reason } },
+    },
     { upsert: true, new: true }
   );
   return scheduled;
 }
 
 export async function setBusySlot(userId: string, date: string, busySlots: IBusySlot[], profile: IUserProfile): Promise<IScheduledActivity[]> {
-  await ScheduleModel.findOneAndUpdate({ userId, date }, { $set: { busySlots } }, { upsert: true });
-  return recalculateDaySchedule(userId, date, profile, busySlots);
+  return recalculateDaySchedule(userId, date, profile, busySlots, 'busy_slot_change');
 }
 
 export async function markActivityCompleted(userId: string, date: string, activityIndex: number, completed: boolean): Promise<void> {
   const doc = await ScheduleModel.findOne({ userId, date });
   if (!doc || activityIndex < 0 || activityIndex >= doc.scheduledActivities.length) return;
   doc.scheduledActivities[activityIndex].completed = completed;
+  doc.status = computeScheduleStatus(doc.scheduledActivities);
   await doc.save();
 }
 

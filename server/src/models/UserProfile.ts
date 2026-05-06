@@ -24,7 +24,9 @@ export interface IUserProfile {
 
   bodyType?: 'ectomorph' | 'mesomorph' | 'endomorph';
   athleticismLevel?: 'beginner' | 'intermediate' | 'advanced';
-  exerciseModality?: 'gym' | 'yoga' | 'home_workout' | 'cardio' | 'mixed';
+  exerciseModality?: 'gym' | 'yoga' | 'home_workout' | 'cardio' | 'aerobics' | 'mixed';
+  /** Equipment the user has access to. Empty / undefined means "no preference" — no filtering applied. */
+  availableEquipment?: string[];
 
   dietaryPreferences: {
     dietType?: 'vegetarian' | 'vegan' | 'pescatarian' | 'none';
@@ -82,7 +84,8 @@ const userProfileSchema = new mongoose.Schema<IUserProfile>(
     },
     bodyType: { type: String, enum: ['ectomorph', 'mesomorph', 'endomorph'] },
     athleticismLevel: { type: String, enum: ['beginner', 'intermediate', 'advanced'] },
-    exerciseModality: { type: String, enum: ['gym', 'yoga', 'home_workout', 'cardio', 'mixed'] },
+    exerciseModality: { type: String, enum: ['gym', 'yoga', 'home_workout', 'cardio', 'aerobics', 'mixed'] },
+    availableEquipment: { type: [String], default: undefined },
     dietaryPreferences: {
       dietType: { type: String, enum: ['vegetarian', 'vegan', 'pescatarian', 'none'] },
       allergies: [String],

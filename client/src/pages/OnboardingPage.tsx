@@ -152,6 +152,7 @@ export function OnboardingPage() {
                     <select className={selectClass} value={form.exerciseModality ?? 'mixed'} onChange={(e) => update('exerciseModality', e.target.value)}>
                       <option value="gym">Gym</option>
                       <option value="yoga">Yoga</option>
+                      <option value="aerobics">Aerobics</option>
                       <option value="home_workout">Home Workout</option>
                       <option value="cardio">Cardio</option>
                       <option value="mixed">Mixed</option>

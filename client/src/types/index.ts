@@ -17,7 +17,8 @@ export interface UserProfile {
   };
   bodyType?: 'ectomorph' | 'mesomorph' | 'endomorph';
   athleticismLevel?: 'beginner' | 'intermediate' | 'advanced';
-  exerciseModality?: 'gym' | 'yoga' | 'home_workout' | 'cardio' | 'mixed';
+  exerciseModality?: 'gym' | 'yoga' | 'home_workout' | 'cardio' | 'aerobics' | 'mixed';
+  availableEquipment?: string[];
   dietaryPreferences?: {
     dietType?: 'vegetarian' | 'vegan' | 'pescatarian' | 'none';
     allergies?: string[];
@@ -97,6 +98,10 @@ export interface DaySchedule {
 export interface Squad {
   id: string;
   name: string;
+  description?: string;
+  privacy?: 'public' | 'invite_only';
+  inviteCode?: string;
+  leaderId?: string;
   members: Array<{ id: string; name: string; email: string }>;
 }
 

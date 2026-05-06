@@ -153,6 +153,22 @@ export function getPreferredWorkoutStartMin(profile: IUserProfile): number | und
 
 // --- Exercise Recommendations ---
 
+/**
+ * Returns true if the exercise can be performed with the user's available equipment.
+ * If the user provided no equipment list (undefined or empty), no filtering is applied
+ * (treated as "no preference"). Bodyweight exercises (equipment includes 'none') are
+ * always allowed.
+ */
+function exerciseEquipmentAllowed(
+  exercise: Exercise,
+  availableEquipment: string[] | undefined
+): boolean {
+  if (!availableEquipment || availableEquipment.length === 0) return true;
+  if (!exercise.equipment || exercise.equipment.length === 0) return true;
+  if (exercise.equipment.includes('none')) return true;
+  return exercise.equipment.every((eq) => availableEquipment.includes(eq));
+}
+
 export function recommendExercises(
   profile: IUserProfile,
   date: string,
@@ -167,6 +183,7 @@ export function recommendExercises(
   const durationMin = profile.workoutDurationMinutes ?? 45;
   const dayOfWeek = new Date(date + 'T12:00:00').getDay();
   const targetMuscles = MUSCLE_GROUP_ROTATION[dayOfWeek % MUSCLE_GROUP_ROTATION.length];
+  const availableEquipment = profile.availableEquipment;
 
   const intensityOrder: Record<string, number> = { light: 1, moderate: 2, intense: 3 };
   const maxLevel = intensityOrder[intensity] ?? 2;
@@ -176,17 +193,30 @@ export function recommendExercises(
     if (!e.suitableGoals.includes(goal)) return false;
     if (!e.suitableBodyTypes.includes(bodyType)) return false;
     if (modality !== 'mixed' && !e.modality.includes(modality)) return false;
+    if (!exerciseEquipmentAllowed(e, availableEquipment)) return false;
     return true;
   });
 
   if (pool.length < count) {
+    // Relax body-type and modality, but keep the equipment constraint so we never
+    // recommend something the user literally cannot perform.
     pool = EXERCISES.filter((e) => {
       if (intensityOrder[e.intensity] > maxLevel) return false;
       if (!e.suitableGoals.includes(goal)) return false;
+      if (!exerciseEquipmentAllowed(e, availableEquipment)) return false;
       return true;
     });
   }
-  if (pool.length === 0) pool = EXERCISES.filter((e) => intensityOrder[e.intensity] <= maxLevel);
+  if (pool.length === 0) {
+    // Relax goal as well; keep equipment constraint.
+    pool = EXERCISES.filter((e) =>
+      intensityOrder[e.intensity] <= maxLevel && exerciseEquipmentAllowed(e, availableEquipment)
+    );
+  }
+  if (pool.length === 0) {
+    // Equipment list is so restrictive nothing matches — fall back to bodyweight only.
+    pool = EXERCISES.filter((e) => e.equipment.includes('none'));
+  }
 
   const scored = pool.map((e) => {
     let score = 0;

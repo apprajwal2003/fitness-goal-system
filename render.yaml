@@ -1,0 +1,21 @@
+# Render Blueprint — optional; you can also set the same values manually in the dashboard.
+# If the app is in a subfolder of your Git repo, set Root Directory to `fitness-goal-system`.
+
+services:
+  - type: web
+    name: adaptive-fitness
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: NPM_CONFIG_PRODUCTION=false npm ci && NPM_CONFIG_PRODUCTION=false npm run install:all && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_DIST_PATH
+        value: ../client/dist
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false

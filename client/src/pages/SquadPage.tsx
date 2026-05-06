@@ -15,9 +15,13 @@ export function SquadPage() {
   const [date, setDate] = useState(toDateStr(new Date()));
   const [viewMode, setViewMode] = useState<ViewMode>('daily');
   const [createName, setCreateName] = useState('');
+  const [createDescription, setCreateDescription] = useState('');
+  const [createPrivacy, setCreatePrivacy] = useState<'public' | 'invite_only'>('invite_only');
   const [joinId, setJoinId] = useState('');
+  const [joinCode, setJoinCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   function loadSquad() { squadsApi.getMy().then((res) => setSquad(res.squad)); }
   function loadLeaderboard() { squadsApi.leaderboard(date).then((res) => setLeaderboard(res.leaderboard)); }
@@ -28,17 +32,43 @@ export function SquadPage() {
   async function handleCreate() {
     if (!createName.trim()) return;
     setError(''); setLoading(true);
-    try { await squadsApi.create(createName.trim()); setCreateName(''); loadSquad(); }
-    catch (err) { setError(err instanceof Error ? err.message : 'Failed to create squad'); }
+    try {
+      await squadsApi.create({
+        name: createName.trim(),
+        description: createDescription.trim() || undefined,
+        privacy: createPrivacy,
+      });
+      setCreateName(''); setCreateDescription('');
+      loadSquad();
+    } catch (err) { setError(err instanceof Error ? err.message : 'Failed to create squad'); }
     finally { setLoading(false); }
   }
 
-  async function handleJoin() {
+  async function handleJoinById() {
     if (!joinId.trim()) return;
     setError(''); setLoading(true);
     try { await squadsApi.join(joinId.trim()); setJoinId(''); loadSquad(); }
     catch (err) { setError(err instanceof Error ? err.message : 'Failed to join squad'); }
     finally { setLoading(false); }
+  }
+
+  async function handleJoinByCode() {
+    if (!joinCode.trim()) return;
+    setError(''); setLoading(true);
+    try { await squadsApi.joinByCode(joinCode.trim()); setJoinCode(''); loadSquad(); }
+    catch (err) { setError(err instanceof Error ? err.message : 'Failed to join squad'); }
+    finally { setLoading(false); }
+  }
+
+  async function copyInviteCode() {
+    if (!squad?.inviteCode) return;
+    try {
+      await navigator.clipboard.writeText(squad.inviteCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable; ignore */
+    }
   }
 
   const rankColors = ['bg-yellow-100 border-yellow-300 text-yellow-800', 'bg-slate-100 border-slate-300 text-slate-700', 'bg-amber-50 border-amber-300 text-amber-800'];
@@ -53,30 +83,77 @@ export function SquadPage() {
       {!squad ? (
         <Card title="Create or join a squad">
           <p className="text-slate-600 mb-4">Create a squad to compare progress with friends. Goal % is standardized across all members.</p>
-          <div className="space-y-4">
-            <div className="flex gap-2">
-              <Input placeholder="Squad name" value={createName} onChange={(e) => setCreateName(e.target.value)} className="flex-1" />
-              <Button onClick={handleCreate} loading={loading}>Create</Button>
+          <div className="space-y-5">
+            <div className="space-y-3 border border-slate-200 rounded-xl p-4">
+              <p className="text-sm font-medium text-slate-700">Create a new squad</p>
+              <Input placeholder="Squad name" value={createName} onChange={(e) => setCreateName(e.target.value)} />
+              <Input placeholder="Description (optional)" value={createDescription} onChange={(e) => setCreateDescription(e.target.value)} />
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Privacy</label>
+                <select
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  value={createPrivacy}
+                  onChange={(e) => setCreatePrivacy(e.target.value as 'public' | 'invite_only')}
+                >
+                  <option value="invite_only">Invite-only (join via invite code)</option>
+                  <option value="public">Public (anyone can find by ID)</option>
+                </select>
+              </div>
+              <Button onClick={handleCreate} loading={loading} fullWidth>Create squad</Button>
             </div>
-            <div className="flex gap-2">
-              <Input placeholder="Squad ID to join" value={joinId} onChange={(e) => setJoinId(e.target.value)} className="flex-1" />
-              <Button variant="secondary" onClick={handleJoin} loading={loading}>Join</Button>
+
+            <div className="space-y-3 border border-slate-200 rounded-xl p-4">
+              <p className="text-sm font-medium text-slate-700">Join with an invite code</p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="e.g. AB23XY"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  className="flex-1"
+                />
+                <Button onClick={handleJoinByCode} loading={loading}>Join</Button>
+              </div>
+            </div>
+
+            <div className="space-y-3 border border-slate-200 rounded-xl p-4">
+              <p className="text-sm font-medium text-slate-700">Or join by squad ID</p>
+              <div className="flex gap-2">
+                <Input placeholder="Squad ID" value={joinId} onChange={(e) => setJoinId(e.target.value)} className="flex-1" />
+                <Button variant="secondary" onClick={handleJoinById} loading={loading}>Join</Button>
+              </div>
             </div>
           </div>
-          {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
+          {error && <p className="text-sm text-red-600 mt-3">{error}</p>}
         </Card>
       ) : (
         <>
           <Card>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-start justify-between mb-4 gap-4 flex-wrap">
               <div>
                 <h2 className="font-display font-semibold text-lg text-slate-800">{squad.name}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">{squad.members.length} member{squad.members.length !== 1 ? 's' : ''}</p>
+                {squad.description && <p className="text-sm text-slate-600 mt-1">{squad.description}</p>}
+                <p className="text-xs text-slate-500 mt-1">
+                  {squad.members.length} member{squad.members.length !== 1 ? 's' : ''}
+                  {squad.privacy === 'public' ? ' · Public' : ' · Invite-only'}
+                </p>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-slate-500 mb-0.5">Squad ID (share to invite)</p>
-                <p className="font-mono text-xs bg-slate-100 px-3 py-1 rounded-lg break-all select-all">{squad.id}</p>
-              </div>
+              {squad.inviteCode && (
+                <div className="text-right">
+                  <p className="text-xs text-slate-500 mb-0.5">Invite code (share to invite)</p>
+                  <div className="inline-flex items-center gap-2">
+                    <p className="font-mono text-base bg-primary-50 border border-primary-200 text-primary-700 px-3 py-1.5 rounded-lg tracking-wider select-all">
+                      {squad.inviteCode}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={copyInviteCode}
+                      className="text-xs px-2 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700"
+                    >
+                      {copied ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               {squad.members.map((m) => (

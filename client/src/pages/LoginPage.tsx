@@ -207,7 +207,7 @@ export function LoginPage() {
           <p className="text-center text-xs font-semibold uppercase tracking-wider text-white/50">Why FitFlow</p>
           <div className="space-y-4">
             <FeatureRow
-              title="AI Personalized Fitness Planning"
+              title="Personalized Fitness Planning"
               description="Plans that adapt to your goals, schedule, and progress over time."
             />
             <FeatureRow

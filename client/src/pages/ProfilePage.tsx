@@ -7,6 +7,22 @@ import type { UserProfile } from '../types';
 
 const selectClass = 'w-full px-3 py-2 rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent';
 
+const EQUIPMENT_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'none', label: 'No equipment (bodyweight)' },
+  { value: 'mat', label: 'Yoga / exercise mat' },
+  { value: 'dumbbell', label: 'Dumbbells' },
+  { value: 'barbell', label: 'Barbell' },
+  { value: 'rack', label: 'Squat rack' },
+  { value: 'bench', label: 'Weight bench' },
+  { value: 'pullup_bar', label: 'Pull-up bar' },
+  { value: 'jump_rope', label: 'Jump rope' },
+  { value: 'battle_ropes', label: 'Battle ropes' },
+  { value: 'bike', label: 'Bike (stationary or outdoor)' },
+  { value: 'machine', label: 'Cardio / weight machine' },
+  { value: 'cable', label: 'Cable machine' },
+  { value: 'pool', label: 'Swimming pool' },
+];
+
 export function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -55,10 +71,46 @@ export function ProfilePage() {
           <div><label className="block text-sm font-medium text-slate-700 mb-1">Diet</label><select className={selectClass} value={form.dietaryPreferences?.dietType ?? 'none'} onChange={(e) => updateNested('dietaryPreferences', 'dietType', e.target.value)}><option value="none">No restrictions</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="pescatarian">Pescatarian</option></select></div>
           <div><label className="block text-sm font-medium text-slate-700 mb-1">Body Type</label><select className={selectClass} value={form.bodyType ?? ''} onChange={(e) => update('bodyType', e.target.value)}><option value="ectomorph">Ectomorph</option><option value="mesomorph">Mesomorph</option><option value="endomorph">Endomorph</option></select></div>
           <div><label className="block text-sm font-medium text-slate-700 mb-1">Athleticism Level</label><select className={selectClass} value={form.athleticismLevel ?? ''} onChange={(e) => update('athleticismLevel', e.target.value)}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></div>
-          <div><label className="block text-sm font-medium text-slate-700 mb-1">Exercise Modality</label><select className={selectClass} value={form.exerciseModality ?? ''} onChange={(e) => update('exerciseModality', e.target.value)}><option value="gym">Gym</option><option value="yoga">Yoga</option><option value="home_workout">Home Workout</option><option value="cardio">Cardio</option><option value="mixed">Mixed</option></select></div>
+          <div><label className="block text-sm font-medium text-slate-700 mb-1">Exercise Modality</label><select className={selectClass} value={form.exerciseModality ?? ''} onChange={(e) => update('exerciseModality', e.target.value)}><option value="gym">Gym</option><option value="yoga">Yoga</option><option value="aerobics">Aerobics</option><option value="home_workout">Home Workout</option><option value="cardio">Cardio</option><option value="mixed">Mixed</option></select></div>
           <div><label className="block text-sm font-medium text-slate-700 mb-1">Preferred Food Type</label><select className={selectClass} value={form.preferredFoodType ?? ''} onChange={(e) => update('preferredFoodType', e.target.value)}><option value="high_protein">High Protein</option><option value="low_carb">Low Carb</option><option value="balanced">Balanced</option></select></div>
           <Input label="Daily Water (L)" type="number" min={0} max={10} step={0.5} value={form.dailyWaterIntakeL ?? ''} onChange={(e) => update('dailyWaterIntakeL', e.target.value ? Number(e.target.value) : undefined)} />
           <Input label="Target Weight (kg)" type="number" min={20} max={300} value={form.fitnessGoals?.targetWeightKg ?? ''} onChange={(e) => updateNested('fitnessGoals', 'targetWeightKg', e.target.value ? Number(e.target.value) : undefined)} />
+        </div>
+      </Card>
+
+      <Card title="Available Equipment">
+        <p className="text-sm text-slate-600 mb-3">
+          Select what you have access to. Leave all unchecked if you have no preference — the
+          recommender will not filter exercises by equipment.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {EQUIPMENT_OPTIONS.map((opt) => {
+            const checked = (form.availableEquipment ?? []).includes(opt.value);
+            return (
+              <label
+                key={opt.value}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm cursor-pointer transition ${
+                  checked
+                    ? 'bg-primary-50 border-primary-300 text-primary-800'
+                    : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => {
+                    const current = form.availableEquipment ?? [];
+                    const next = e.target.checked
+                      ? [...current, opt.value]
+                      : current.filter((v) => v !== opt.value);
+                    update('availableEquipment', next);
+                  }}
+                  className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                />
+                <span>{opt.label}</span>
+              </label>
+            );
+          })}
         </div>
       </Card>
 

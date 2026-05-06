@@ -56,6 +56,14 @@ const scheduledActivitySchema = new mongoose.Schema(
   { _id: false }
 );
 
+const reschedulingHistorySchema = new mongoose.Schema(
+  {
+    at: { type: Date, required: true, default: () => new Date() },
+    reason: { type: String, required: true },
+  },
+  { _id: false }
+);
+
 export interface INutrition {
   calories: number;
   proteinG: number;
@@ -97,12 +105,21 @@ export interface IScheduledActivity {
   mealDetail?: IMealDetail;
 }
 
+export type ScheduleStatus = 'active' | 'completed' | 'partially_completed';
+
+export interface IReschedulingHistoryEntry {
+  at: Date;
+  reason: string;
+}
+
 export interface IDaySchedule {
   _id: mongoose.Types.ObjectId;
   userId: mongoose.Types.ObjectId;
   date: string;
   busySlots: IBusySlot[];
   scheduledActivities: IScheduledActivity[];
+  status: ScheduleStatus;
+  reschedulingHistory: IReschedulingHistoryEntry[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -113,9 +130,25 @@ const dayScheduleSchema = new mongoose.Schema<IDaySchedule>(
     date: { type: String, required: true },
     busySlots: [busySlotSchema],
     scheduledActivities: [scheduledActivitySchema],
+    status: {
+      type: String,
+      enum: ['active', 'completed', 'partially_completed'],
+      default: 'active',
+    },
+    reschedulingHistory: { type: [reschedulingHistorySchema], default: [] },
   },
   { timestamps: true }
 );
+
+/** Recomputes status from completion counts. Used by service layer before saving. */
+export function computeScheduleStatus(activities: IScheduledActivity[]): ScheduleStatus {
+  if (activities.length === 0) return 'active';
+  const total = activities.length;
+  const done = activities.filter((a) => a.completed).length;
+  if (done === 0) return 'active';
+  if (done === total) return 'completed';
+  return 'partially_completed';
+}
 
 dayScheduleSchema.index({ userId: 1, date: 1 }, { unique: true });
 
