@@ -14,7 +14,7 @@ const updateProfileSchema = z.object({
   }).optional(),
   bodyType: z.enum(['ectomorph', 'mesomorph', 'endomorph']).optional(),
   athleticismLevel: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
-  exerciseModality: z.enum(['gym', 'yoga', 'home_workout', 'cardio', 'aerobics', 'mixed']).optional(),
+  exerciseModality: z.enum(['gym', 'yoga', 'home_workout', 'cardio', 'aerobics', 'mixed', 'not_sure']).optional(),
   availableEquipment: z.array(z.string()).optional(),
   dietaryPreferences: z.object({
     dietType: z.enum(['vegetarian', 'vegan', 'pescatarian', 'none']).optional(),
@@ -23,7 +23,10 @@ const updateProfileSchema = z.object({
   }).optional(),
   foodsToAvoid: z.array(z.string()).optional(),
   preferredFoodType: z.enum(['high_protein', 'low_carb', 'balanced']).optional(),
-  dailyWaterIntakeL: z.number().min(0).max(10).optional(),
+  // `null` explicitly clears the field (used by the "Not sure" toggle in the UI
+  // — without `null`, `JSON.stringify` drops the key and the server can't tell
+  // "leave alone" apart from "user wants this unset").
+  dailyWaterIntakeL: z.number().min(0).max(10).nullable().optional(),
   fitnessGoals: z.object({
     goalType: z.enum(['lose_weight', 'build_muscle', 'maintain', 'endurance']).optional(),
     targetWeightKg: z.number().min(0).optional(),
@@ -72,7 +75,13 @@ const PROFILE_FIELDS = [
   'workoutDurationMinutes', 'maxWorkoutIntensity', 'mealFrequency', 'dailyCalorieTarget',
 ] as const;
 
-function profileToJson(profile: any) {
+/**
+ * Project the raw Mongo profile document down to the public-facing JSON
+ * shape. Exported so that other controllers (e.g. `authController.me`) can
+ * return the *same* projection — keeping the client's `useAuth().profile`
+ * and the `GET /users/profile` response in sync.
+ */
+export function profileToJson(profile: any) {
   const obj: any = {};
   for (const key of PROFILE_FIELDS) {
     if (profile[key] !== undefined) obj[key] = profile[key];
@@ -104,9 +113,20 @@ export async function updateProfile(
 ): Promise<void> {
   try {
     const body = updateProfileSchema.parse(req.body);
+    // Split the patch: explicit `null` means "unset this field" (used by the
+    // "Not sure" toggle on water intake). Anything else goes in $set.
+    const setOps: Record<string, unknown> = {};
+    const unsetOps: Record<string, ''> = {};
+    for (const [key, value] of Object.entries(body)) {
+      if (value === null) unsetOps[key] = '';
+      else setOps[key] = value;
+    }
+    const update: Record<string, unknown> = {};
+    if (Object.keys(setOps).length > 0) update.$set = setOps;
+    if (Object.keys(unsetOps).length > 0) update.$unset = unsetOps;
     const profile = await UserProfileModel.findOneAndUpdate(
       { userId: req.user!.id },
-      { $set: body },
+      update,
       { new: true }
     ).lean();
     if (!profile) {

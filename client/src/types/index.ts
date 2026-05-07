@@ -17,7 +17,7 @@ export interface UserProfile {
   };
   bodyType?: 'ectomorph' | 'mesomorph' | 'endomorph';
   athleticismLevel?: 'beginner' | 'intermediate' | 'advanced';
-  exerciseModality?: 'gym' | 'yoga' | 'home_workout' | 'cardio' | 'aerobics' | 'mixed';
+  exerciseModality?: 'gym' | 'yoga' | 'home_workout' | 'cardio' | 'aerobics' | 'mixed' | 'not_sure';
   availableEquipment?: string[];
   dietaryPreferences?: {
     dietType?: 'vegetarian' | 'vegan' | 'pescatarian' | 'none';
@@ -26,7 +26,8 @@ export interface UserProfile {
   };
   foodsToAvoid?: string[];
   preferredFoodType?: 'high_protein' | 'low_carb' | 'balanced';
-  dailyWaterIntakeL?: number;
+  /** `null` means the user picked the "Not sure" option and wants the recommended default. */
+  dailyWaterIntakeL?: number | null;
   fitnessGoals?: {
     goalType?: 'lose_weight' | 'build_muscle' | 'maintain' | 'endurance';
     targetWeightKg?: number;

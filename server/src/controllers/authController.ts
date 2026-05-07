@@ -5,6 +5,7 @@ import { env } from '../config/env.js';
 import { UserModel, hashPassword, verifyPassword } from '../models/User.js';
 import { UserProfileModel } from '../models/UserProfile.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { profileToJson } from './usersController.js';
 import type { AuthenticatedRequest } from '../middleware/auth.js';
 
 const registerSchema = z.object({
@@ -126,19 +127,12 @@ export async function me(
         squadId: user.squadId?.toString(),
         createdAt: user.createdAt,
       },
-      profile: profile
-        ? {
-            onboardingCompleted: profile.onboardingCompleted,
-            bodyMetrics: profile.bodyMetrics,
-            dietaryPreferences: profile.dietaryPreferences,
-            fitnessGoals: profile.fitnessGoals,
-            workHours: profile.workHours,
-            travelMinutesPerDay: profile.travelMinutesPerDay,
-            weeklyRoutine: profile.weeklyRoutine,
-            mealDurationsMinutes: profile.mealDurationsMinutes,
-            workoutDurationMinutes: profile.workoutDurationMinutes,
-          }
-        : null,
+      // Use the same canonical projection as `GET /users/profile` so that
+      // `useAuth().profile` on the client matches what the Profile page sees.
+      // Otherwise per-field reads (e.g. the Dashboard's water-target label
+      // reading `profile.dailyWaterIntakeL`) silently return `undefined` for
+      // every field that wasn't in this hand-picked list.
+      profile: profile ? profileToJson(profile) : null,
     });
   } catch (e) {
     next(e);

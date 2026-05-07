@@ -156,6 +156,7 @@ export function OnboardingPage() {
                       <option value="home_workout">Home Workout</option>
                       <option value="cardio">Cardio</option>
                       <option value="mixed">Mixed</option>
+                      <option value="not_sure">Not sure — pick for me</option>
                     </select>
                   </div>
                   <div>
@@ -169,7 +170,26 @@ export function OnboardingPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <Input label="Daily Water Intake (liters)" type="number" min={0} max={10} step={0.5} value={form.dailyWaterIntakeL ?? 2.5} onChange={(e) => update('dailyWaterIntakeL', Number(e.target.value))} />
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Daily Water Intake (liters)</label>
+                    <input
+                      type="number" min={0} max={10} step={0.5}
+                      value={form.dailyWaterIntakeL ?? ''}
+                      placeholder="2.5"
+                      disabled={form.dailyWaterIntakeL == null}
+                      onChange={(e) => update('dailyWaterIntakeL', e.target.value ? Number(e.target.value) : undefined)}
+                      className={`${selectClass} disabled:bg-slate-100 disabled:text-slate-400`}
+                    />
+                    <label className="flex items-center gap-2 mt-1.5 text-xs text-slate-600 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form.dailyWaterIntakeL == null}
+                        onChange={(e) => update('dailyWaterIntakeL', e.target.checked ? null : 2.5)}
+                        className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                      />
+                      Not sure — use recommended (2.5L)
+                    </label>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">Foods to Avoid</label>
                     <select multiple className={`${selectClass} h-24`} value={form.foodsToAvoid ?? []}

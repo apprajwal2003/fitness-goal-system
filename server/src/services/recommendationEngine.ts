@@ -176,7 +176,10 @@ export function recommendExercises(
 ): { exercises: Exercise[]; totalCalories: number } {
   const goal = (profile.fitnessGoals?.goalType ?? 'maintain') as GoalType;
   const bodyType = (profile.bodyType ?? 'mesomorph') as BodyType;
-  const modality = (profile.exerciseModality ?? 'mixed') as Modality;
+  // 'not_sure' means the user doesn't have a preference — treat it like 'mixed'
+  // so the recommender draws from the broadest exercise pool.
+  const rawModality = profile.exerciseModality;
+  const modality: Modality = (!rawModality || rawModality === 'not_sure' ? 'mixed' : rawModality) as Modality;
   const intensity = (profile.maxWorkoutIntensity ?? 'moderate') as Intensity;
   const athleticism = profile.athleticismLevel ?? 'beginner';
   const weight = profile.bodyMetrics?.weightKg ?? 70;

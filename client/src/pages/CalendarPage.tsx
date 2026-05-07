@@ -33,6 +33,22 @@ function getCalendarDays(year: number, month: number) {
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+const MOTIVATION_MESSAGES = [
+  "Missed this one — that's okay. Consistency beats perfection. Get back to it today.",
+  'Every champion has off days. The next workout is the one that counts.',
+  "One missed day doesn't undo your progress. Keep going.",
+  "Don't break the chain twice — one workout today and you're back on track.",
+  'Progress isn’t linear. A missed day is data, not failure.',
+  'Tomorrow is a fresh rep. Show up.',
+];
+
+// Deterministic pick so the message is stable for a given day (no flicker on re-render).
+function getMotivationForDate(date: string): string {
+  let hash = 0;
+  for (let i = 0; i < date.length; i++) hash = (hash * 31 + date.charCodeAt(i)) | 0;
+  return MOTIVATION_MESSAGES[Math.abs(hash) % MOTIVATION_MESSAGES.length];
+}
+
 function getDayStats(day: DaySchedule | undefined) {
   if (!day || day.scheduledActivities.length === 0) return null;
   const workouts = day.scheduledActivities.filter((a) => a.type === 'workout');
@@ -87,6 +103,16 @@ export function CalendarPage() {
   const weeklyCalBurned = currentMonthSchedule.reduce((s, d) => s + d.scheduledActivities.filter((a) => a.type === 'workout' && a.completed).reduce((c, a) => c + (a.nutrition?.calories ?? 0), 0), 0);
 
   const hoveredStats = hoveredDate ? getDayStats(byDate.get(hoveredDate)) : null;
+
+  // Days in the visible month where the user had scheduled workouts but completed none and the day is in the past.
+  const missedDates = currentMonthSchedule
+    .map((d) => d.date)
+    .filter((date) => dayStatus(date) === 'missed');
+  const missedCount = missedDates.length;
+  // Pick a motivation tied to the most recent missed day so the message rotates as missed days accumulate.
+  const monthlyMotivation = missedDates.length > 0
+    ? getMotivationForDate(missedDates[missedDates.length - 1])
+    : '';
 
   return (
     <div className="space-y-6">
@@ -155,6 +181,25 @@ export function CalendarPage() {
                   <span>Workouts: {hoveredStats.completedW}/{hoveredStats.totalW}</span>
                   <span>Meals: {hoveredStats.completedM}/{hoveredStats.totalM}</span>
                   <span>Burned: {hoveredStats.caloriesBurned} kcal</span>
+                </div>
+                {dayStatus(hoveredDate) === 'missed' && (
+                  <p className="mt-2 pt-2 border-t border-slate-200 text-xs text-red-700 italic">
+                    {getMotivationForDate(hoveredDate)}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {missedCount > 0 && (
+              <div className="mt-4 p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-start gap-3">
+                <span aria-hidden className="text-rose-600 text-lg leading-none mt-0.5">&#9728;</span>
+                <div className="text-sm">
+                  <p className="font-medium text-rose-800">
+                    {missedCount === 1
+                      ? '1 missed workout day this month'
+                      : `${missedCount} missed workout days this month`}
+                  </p>
+                  <p className="text-rose-700 italic mt-0.5">{monthlyMotivation}</p>
                 </div>
               </div>
             )}

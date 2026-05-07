@@ -33,6 +33,19 @@ export async function getOrCreateDaySchedule(
   return { busySlots: [], scheduledActivities: [] };
 }
 
+/**
+ * Build a stable identity key for an activity so we can match an activity in
+ * the freshly-built plan against a completion flag from the previous plan.
+ *
+ * Using `(type, mealType, name)` is safe because meal/snack names are unique
+ * within a day's plan and workout names are derived deterministically from the
+ * exercise list. After a busy-slot edit only the *times* shift; identities
+ * stay the same and completion flags survive.
+ */
+function activityIdentity(a: { type: string; mealType?: string; name?: string }): string {
+  return `${a.type}|${a.mealType ?? ''}|${a.name ?? ''}`;
+}
+
 export async function recalculateDaySchedule(
   userId: string,
   date: string,
@@ -40,6 +53,16 @@ export async function recalculateDaySchedule(
   busySlots: IBusySlot[],
   reason: string = 'recalculate'
 ): Promise<IScheduledActivity[]> {
+  // Snapshot completion flags from the previous plan so adding/removing a busy
+  // slot doesn't silently un-check activities the user had already done.
+  const existingDoc = await ScheduleModel.findOne({ userId, date }).lean();
+  const previousCompletion = new Map<string, boolean>();
+  if (existingDoc) {
+    for (const a of existingDoc.scheduledActivities) {
+      if (a.completed) previousCompletion.set(activityIdentity(a), true);
+    }
+  }
+
   const dayOfWeek = new Date(date + 'T12:00:00').getDay();
   const blockedRanges: Array<{ start: string; end: string }> = [];
 
@@ -152,7 +175,7 @@ export async function recalculateDaySchedule(
   const scheduled: IScheduledActivity[] = result.scheduled.map((s) => {
     if ((s.type === 'meal' || s.type === 'snack') && s.mealType && mealMap[s.mealType]) {
       const rec = mealMap[s.mealType];
-      return {
+      const built = {
         type: s.type,
         mealType: s.mealType,
         start: s.start, end: s.end,
@@ -164,9 +187,11 @@ export async function recalculateDaySchedule(
           alternatives: rec.alternatives.map((a) => ({ mealId: a.id, mealName: a.name, calories: a.calories })),
         },
       };
+      built.completed = previousCompletion.get(activityIdentity(built)) ?? false;
+      return built;
     }
     if (s.type === 'workout') {
-      return {
+      const built = {
         type: s.type, start: s.start, end: s.end, name: s.name, completed: false,
         nutrition: { calories: workoutCalories, proteinG: 0, carbsG: 0, fatG: 0 },
         exerciseDetails: exercises.map((ex) => ({
@@ -174,8 +199,12 @@ export async function recalculateDaySchedule(
           muscleGroups: ex.muscleGroups, intensity: ex.intensity,
         })),
       };
+      built.completed = previousCompletion.get(activityIdentity(built)) ?? false;
+      return built;
     }
-    return { type: s.type, mealType: s.mealType, start: s.start, end: s.end, name: s.name ?? s.type, completed: false };
+    const fallback = { type: s.type, mealType: s.mealType, start: s.start, end: s.end, name: s.name ?? s.type, completed: false };
+    fallback.completed = previousCompletion.get(activityIdentity(fallback)) ?? false;
+    return fallback;
   });
 
   await ScheduleModel.findOneAndUpdate(

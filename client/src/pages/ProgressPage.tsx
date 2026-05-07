@@ -45,8 +45,17 @@ export function ProgressPage() {
   const totalCalBurned = stats?.days.reduce((s, d) => s + d.caloriesBurned, 0) ?? 0;
   const totalProtein = stats?.days.reduce((s, d) => s + d.proteinG, 0) ?? 0;
 
-  // Heatmap data
-  const heatmapData = stats?.days.map((d) => ({ date: d.date, value: d.goalPercent })) ?? [];
+  // Heatmap data — pass enough context to distinguish "missed" (had scheduled
+  // workouts but completed none, and the day is in the past) from "no data"
+  // (no workouts scheduled for that day).
+  const todayStr = toDateStr(new Date());
+  const heatmapData = stats?.days.map((d) => ({
+    date: d.date,
+    value: d.goalPercent,
+    totalWorkouts: d.totalWorkouts,
+    completedWorkouts: d.completedWorkouts,
+    isPast: d.date < todayStr,
+  })) ?? [];
 
   return (
     <div className="space-y-6">
@@ -164,19 +173,34 @@ export function ProgressPage() {
           <Card title="Daily Goal Completion Heatmap">
             <div className="flex flex-wrap gap-1">
               {heatmapData.map((d) => {
-                const color = d.value >= 80 ? 'bg-emerald-500' : d.value >= 50 ? 'bg-emerald-300' : d.value > 0 ? 'bg-emerald-100' : 'bg-slate-100';
+                // Missed = the day had scheduled workouts, none were completed, and the day is in the past.
+                // We surface this in red so a "skipped" day visually stands apart from a "no plan" day.
+                const isMissed = d.isPast && d.totalWorkouts > 0 && d.completedWorkouts === 0;
+                let color: string;
+                let titleSuffix = '';
+                if (isMissed) {
+                  color = 'bg-red-300';
+                  titleSuffix = ' — missed';
+                } else if (d.value >= 80) {
+                  color = 'bg-emerald-500';
+                } else if (d.value >= 50) {
+                  color = 'bg-emerald-300';
+                } else if (d.value > 0) {
+                  color = 'bg-emerald-100';
+                } else {
+                  color = 'bg-slate-100';
+                }
                 return (
-                  <div key={d.date} className={`w-5 h-5 rounded-sm ${color} cursor-pointer`} title={`${d.date}: ${d.value}%`} />
+                  <div key={d.date} className={`w-5 h-5 rounded-sm ${color} cursor-pointer`} title={`${d.date}: ${d.value}%${titleSuffix}`} />
                 );
               })}
             </div>
-            <div className="flex items-center gap-2 mt-3 text-xs text-slate-500">
-              <span>Less</span>
-              <span className="w-4 h-4 rounded-sm bg-slate-100" />
-              <span className="w-4 h-4 rounded-sm bg-emerald-100" />
-              <span className="w-4 h-4 rounded-sm bg-emerald-300" />
-              <span className="w-4 h-4 rounded-sm bg-emerald-500" />
-              <span>More</span>
+            <div className="flex flex-wrap items-center gap-3 mt-3 text-xs text-slate-500">
+              <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-sm bg-slate-100 border border-slate-200" /> No plan</span>
+              <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-sm bg-red-300" /> Missed</span>
+              <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-sm bg-emerald-100" /> Some</span>
+              <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-sm bg-emerald-300" /> Half+</span>
+              <span className="flex items-center gap-1.5"><span className="w-4 h-4 rounded-sm bg-emerald-500" /> Complete</span>
             </div>
           </Card>
 

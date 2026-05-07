@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { usersApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
@@ -24,6 +25,7 @@ const EQUIPMENT_OPTIONS: Array<{ value: string; label: string }> = [
 ];
 
 export function ProfilePage() {
+  const { refreshUser } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -41,7 +43,14 @@ export function ProfilePage() {
   async function handleSave() {
     setError(''); setSuccess(false); setSaving(true);
     try {
-      await usersApi.updateProfile(form);
+      const saved = await usersApi.updateProfile(form);
+      // Sync local form with the canonical server response — `null` toggles
+      // (e.g. "Not sure" water) come back as missing keys, so reset rather
+      // than merge to avoid stale entries.
+      setForm(saved);
+      // Refresh AuthContext so any other page reading `useAuth().profile`
+      // (e.g. the Dashboard's water-target label) sees the new values.
+      await refreshUser();
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
@@ -71,9 +80,28 @@ export function ProfilePage() {
           <div><label className="block text-sm font-medium text-slate-700 mb-1">Diet</label><select className={selectClass} value={form.dietaryPreferences?.dietType ?? 'none'} onChange={(e) => updateNested('dietaryPreferences', 'dietType', e.target.value)}><option value="none">No restrictions</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="pescatarian">Pescatarian</option></select></div>
           <div><label className="block text-sm font-medium text-slate-700 mb-1">Body Type</label><select className={selectClass} value={form.bodyType ?? ''} onChange={(e) => update('bodyType', e.target.value)}><option value="ectomorph">Ectomorph</option><option value="mesomorph">Mesomorph</option><option value="endomorph">Endomorph</option></select></div>
           <div><label className="block text-sm font-medium text-slate-700 mb-1">Athleticism Level</label><select className={selectClass} value={form.athleticismLevel ?? ''} onChange={(e) => update('athleticismLevel', e.target.value)}><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></div>
-          <div><label className="block text-sm font-medium text-slate-700 mb-1">Exercise Modality</label><select className={selectClass} value={form.exerciseModality ?? ''} onChange={(e) => update('exerciseModality', e.target.value)}><option value="gym">Gym</option><option value="yoga">Yoga</option><option value="aerobics">Aerobics</option><option value="home_workout">Home Workout</option><option value="cardio">Cardio</option><option value="mixed">Mixed</option></select></div>
+          <div><label className="block text-sm font-medium text-slate-700 mb-1">Exercise Modality</label><select className={selectClass} value={form.exerciseModality ?? ''} onChange={(e) => update('exerciseModality', e.target.value)}><option value="gym">Gym</option><option value="yoga">Yoga</option><option value="aerobics">Aerobics</option><option value="home_workout">Home Workout</option><option value="cardio">Cardio</option><option value="mixed">Mixed</option><option value="not_sure">Not sure — pick for me</option></select></div>
           <div><label className="block text-sm font-medium text-slate-700 mb-1">Preferred Food Type</label><select className={selectClass} value={form.preferredFoodType ?? ''} onChange={(e) => update('preferredFoodType', e.target.value)}><option value="high_protein">High Protein</option><option value="low_carb">Low Carb</option><option value="balanced">Balanced</option></select></div>
-          <Input label="Daily Water (L)" type="number" min={0} max={10} step={0.5} value={form.dailyWaterIntakeL ?? ''} onChange={(e) => update('dailyWaterIntakeL', e.target.value ? Number(e.target.value) : undefined)} />
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1">Daily Water (L)</label>
+            <input
+              type="number" min={0} max={10} step={0.5}
+              value={form.dailyWaterIntakeL ?? ''}
+              placeholder="2.5"
+              disabled={form.dailyWaterIntakeL == null}
+              onChange={(e) => update('dailyWaterIntakeL', e.target.value ? Number(e.target.value) : undefined)}
+              className={`${selectClass} disabled:bg-slate-100 disabled:text-slate-400`}
+            />
+            <label className="flex items-center gap-2 mt-1.5 text-xs text-slate-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.dailyWaterIntakeL == null}
+                onChange={(e) => update('dailyWaterIntakeL', e.target.checked ? null : 2.5)}
+                className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+              />
+              Not sure — use recommended (2.5L)
+            </label>
+          </div>
           <Input label="Target Weight (kg)" type="number" min={20} max={300} value={form.fitnessGoals?.targetWeightKg ?? ''} onChange={(e) => updateNested('fitnessGoals', 'targetWeightKg', e.target.value ? Number(e.target.value) : undefined)} />
         </div>
       </Card>

@@ -8,9 +8,18 @@ import { existsSync } from 'fs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-/** Path to built client (set in Docker; used to serve static + SPA). From dist/config/ we go up to app root then client-dist. */
-export const clientDistPath =
-  process.env.CLIENT_DIST_PATH || path.join(__dirname, '..', '..', 'client-dist');
+/**
+ * Path to built client (set in Docker; used to serve static + SPA).
+ *
+ * IMPORTANT: must be an absolute path. `res.sendFile()` rejects relative paths,
+ * which would cause an "Internal server error" on every direct URL load
+ * (refresh, deep link, browser back to a deep URL) when CLIENT_DIST_PATH is set
+ * to a relative value (e.g. `../client/dist` on Render). We resolve it here
+ * against the process CWD so any deploy target can use either form safely.
+ */
+export const clientDistPath = path.resolve(
+  process.env.CLIENT_DIST_PATH || path.join(__dirname, '..', '..', 'client-dist')
+);
 
 export const env = {
   port: Number(process.env.PORT) || 3000,

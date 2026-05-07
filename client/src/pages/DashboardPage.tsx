@@ -84,12 +84,16 @@ export function DashboardPage() {
           <p className="text-xs text-slate-500 mt-1">{completed}/{total} done</p>
         </Card>
         <Card>
-          <p className="text-xs text-slate-500 uppercase tracking-wider">Calories In</p>
-          <p className="text-3xl font-display font-bold text-amber-600 mt-1">{caloriesConsumed}</p>
-          <p className="text-xs text-slate-500 mt-1">of {calorieTarget} kcal</p>
+          <p className="text-xs text-slate-500 uppercase tracking-wider">Calories</p>
+          <p className="text-3xl font-display font-bold text-amber-600 mt-1 leading-none">
+            {caloriesConsumed}
+            <span className="text-lg text-slate-400 font-medium"> / {calorieTarget}</span>
+          </p>
+          <p className="text-xs text-slate-500 mt-1">consumed / target (kcal)</p>
           <div className="w-full bg-slate-200 rounded-full h-2 mt-2">
             <div className="bg-amber-500 h-2 rounded-full transition-all" style={{ width: `${Math.min((caloriesConsumed / calorieTarget) * 100, 100)}%` }} />
           </div>
+          <p className="text-xs text-slate-500 mt-1">{Math.max(calorieTarget - caloriesConsumed, 0)} kcal left today</p>
         </Card>
         <Card>
           <p className="text-xs text-slate-500 uppercase tracking-wider">Burned</p>
@@ -111,7 +115,7 @@ export function DashboardPage() {
         <Card>
           <p className="text-xs text-slate-500 uppercase tracking-wider">Water Goal</p>
           <p className="text-3xl font-display font-bold text-cyan-600 mt-1">{data?.waterTarget ?? 2.5}L</p>
-          <p className="text-xs text-slate-500 mt-1">daily target</p>
+          <p className="text-xs text-slate-500 mt-1">{profile?.dailyWaterIntakeL == null ? 'recommended (you picked “not sure”)' : 'daily target'}</p>
         </Card>
       </div>
 

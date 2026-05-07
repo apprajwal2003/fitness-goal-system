@@ -8,11 +8,11 @@ A full-stack web app that generates **personalized meal and workout schedules** 
 
 Install these **before** following the run steps below.
 
-| Requirement              | Version      | Notes                                                                                                                                                                                                                 |
-| ------------------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Node.js**              | 18 or higher | [Download](https://nodejs.org/) — includes npm                                                                                                                                                                        |
-| **MongoDB**              | 5.x or 7.x   | Only for **development** (Option A). For **containers** (Option B), MongoDB runs inside the container.                                                                                                                |
-| **Podman** or **Docker** | Latest       | Only for **Option B**. [Podman](https://podman.io/) + [podman-compose](https://github.com/containers/podman-compose), or [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose). |
+| Requirement | Version | Notes |
+|-------------|---------|--------|
+| **Node.js** | 18 or higher | [Download](https://nodejs.org/) — includes npm |
+| **MongoDB** | 5.x or 7.x | Only for **development** (Option A). For **containers** (Option B), MongoDB runs inside the container. |
+| **Podman** or **Docker** | Latest | Only for **Option B**. [Podman](https://podman.io/) + [podman-compose](https://github.com/containers/podman-compose), or [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose). |
 
 **Check your versions:**
 
@@ -73,10 +73,10 @@ cp server/.env.example server/.env
 
 Edit `server/.env` and set at least:
 
-| Variable      | Required | What to set                                                                                         |
-| ------------- | -------- | --------------------------------------------------------------------------------------------------- |
-| `MONGODB_URI` | Yes      | `mongodb://localhost:27017/fitness_goal_system` for local MongoDB, or your Atlas connection string. |
-| `JWT_SECRET`  | Yes      | Any long random string (e.g. 32+ characters). Keep it secret.                                       |
+| Variable | Required | What to set |
+|----------|----------|-------------|
+| `MONGODB_URI` | Yes | `mongodb://localhost:27017/fitness_goal_system` for local MongoDB, or your Atlas connection string. |
+| `JWT_SECRET` | Yes | Any long random string (e.g. 32+ characters). Keep it secret. |
 
 You can leave `PORT`, `NODE_ENV`, `JWT_EXPIRES_IN`, and `CLIENT_ORIGIN` as in the example unless you need to change them.
 
@@ -100,11 +100,29 @@ You should see the client and server starting. Wait until you see something like
 
 Register a new user, complete onboarding, then use Dashboard, Schedule, Calendar, Progress, Squad, and Profile.
 
-> Tip: in **Profile** you can pick an exercise modality (Gym, Yoga, Aerobics, Home
-> Workout, Cardio, or Mixed) and check the equipment you actually have access to;
-> the recommender will only suggest exercises you can perform. In **Squad** you can
-> create an invite-only squad and share the 6-character invite code with friends —
-> they can join with **Join with an invite code** instead of a long squad ID.
+> Tips:
+>
+> - In **Profile / Onboarding** you can pick an exercise modality (Gym, Yoga,
+>   Aerobics, Home Workout, Cardio, Mixed, or **Not sure — pick for me** when
+>   you'd like the recommender to choose for you), and set your **Daily Water
+>   Intake** with a "Not sure — use recommended (2.5L)" checkbox. Equipment
+>   filtering is also there: tick what you actually have and the recommender
+>   will only suggest exercises you can perform.
+> - In **Schedule**, marking activities as **Done** now persists across
+>   busy-slot edits — adding or removing a busy block re-times your day
+>   without un-checking what you've already completed.
+> - In **Dashboard**, the Calories card shows **consumed / target** as the
+>   headline number and how many kcal you have left for the day. The Water
+>   Goal card labels itself "recommended" when you picked **Not sure**.
+> - In **Calendar**, missed workout days are highlighted in red with a
+>   per-day motivational message (hover preview) and a monthly summary
+>   strip so it shows up on mobile too.
+> - In **Progress**, the Daily Goal Completion Heatmap distinguishes
+>   **No plan** (slate) from **Missed** (red) so a skipped day no longer
+>   looks the same as a rest day.
+> - In **Squad** you can create an invite-only squad and share the
+>   6-character invite code with friends — they can join with **Join with
+>   an invite code** instead of a long squad ID.
 
 ---
 
@@ -154,12 +172,12 @@ Open **[http://localhost:3000](http://localhost:3000)** in your browser. The app
 
 ### Useful container commands
 
-| Task                       | Podman                         | Docker                         |
-| -------------------------- | ------------------------------ | ------------------------------ |
-| Stop app and MongoDB       | `podman-compose down`          | `docker compose down`          |
-| View app logs              | `podman-compose logs -f app`   | `docker compose logs -f app`   |
+| Task | Podman | Docker |
+|------|--------|--------|
+| Stop app and MongoDB | `podman-compose down` | `docker compose down` |
+| View app logs | `podman-compose logs -f app` | `docker compose logs -f app` |
 | Restart after code changes | `podman-compose up -d --build` | `docker compose up -d --build` |
-| Remove database data too   | `podman-compose down -v`       | `docker compose down -v`       |
+| Remove database data too | `podman-compose down -v` | `docker compose down -v` |
 
 ---
 
@@ -203,12 +221,12 @@ If any step fails, see **Troubleshooting** below.
 
 ## Scripts (from project root)
 
-| Command               | Description                                                                                          |
-| --------------------- | ---------------------------------------------------------------------------------------------------- |
+| Command | Description |
+|--------|-------------|
 | `npm run install:all` | Install dependencies for root, client, and server. Run once after clone or when dependencies change. |
-| `npm run dev`         | Start client (Vite) and server (Node) in development with hot reload.                                |
-| `npm run build`       | Build client and server for production.                                                              |
-| `npm start`           | Start the server only (run after `npm run build`; use for production).                               |
+| `npm run dev` | Start client (Vite) and server (Node) in development with hot reload. |
+| `npm run build` | Build client and server for production. |
+| `npm start` | Start the server only (run after `npm run build`; use for production). |
 
 ---
 
@@ -216,20 +234,20 @@ If any step fails, see **Troubleshooting** below.
 
 ### Development (`server/.env`)
 
-| Variable                         | Required | Default                                         | Description                                   |
-| -------------------------------- | -------- | ----------------------------------------------- | --------------------------------------------- |
-| `MONGODB_URI`                    | Yes      | `mongodb://localhost:27017/fitness_goal_system` | MongoDB connection string.                    |
-| `JWT_SECRET`                     | Yes      | (none)                                          | Secret key for JWT; use a long random string. |
-| `PORT`                           | No       | `3000`                                          | Server port.                                  |
-| `NODE_ENV`                       | No       | `development`                                   | Set to `production` for production.           |
-| `JWT_EXPIRES_IN`                 | No       | `7d`                                            | Token expiry (e.g. `7d`, `24h`).              |
-| `CLIENT_ORIGIN` / `CORS_ORIGINS` | No       | localhost:5173, localhost:3000                  | Allowed CORS origins.                         |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `MONGODB_URI` | Yes | `mongodb://localhost:27017/fitness_goal_system` | MongoDB connection string. |
+| `JWT_SECRET` | Yes | (none) | Secret key for JWT; use a long random string. |
+| `PORT` | No | `3000` | Server port. |
+| `NODE_ENV` | No | `development` | Set to `production` for production. |
+| `JWT_EXPIRES_IN` | No | `7d` | Token expiry (e.g. `7d`, `24h`). |
+| `CLIENT_ORIGIN` / `CORS_ORIGINS` | No | localhost:5173, localhost:3000 | Allowed CORS origins. |
 
 ### Containers (root `.env`)
 
-| Variable     | Required | Default | Description                                   |
-| ------------ | -------- | ------- | --------------------------------------------- |
-| `JWT_SECRET` | Yes      | (none)  | Secret key for JWT; use a long random string. |
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `JWT_SECRET` | Yes | (none) | Secret key for JWT; use a long random string. |
 
 Other settings (e.g. `MONGODB_URI`, `CORS_ORIGINS`) are defined in `compose.yaml`.
 
@@ -285,7 +303,7 @@ The daily scheduler is implemented as a **Constraint Satisfaction Problem (CSP)*
    - No-overlap between any two activities.
    - Strict meal ordering: breakfast before lunch before dinner.
    - Meal–meal gap (default 150 minutes) between any two meal-like activities.
-     AC-3 prunes domain values that have no supporting value in any neighbor's domain.
+   AC-3 prunes domain values that have no supporting value in any neighbor's domain.
 4. **Backtracking search** with:
    - **MRV** (Minimum Remaining Values) variable selection — assign the most
      constrained variable first.
@@ -299,8 +317,13 @@ The daily scheduler is implemented as a **Constraint Satisfaction Problem (CSP)*
 
 When the user marks a busy slot or a day is recalculated, the schedule is re-solved
 incrementally and an entry is appended to the schedule's `reschedulingHistory` log
-(see `Schedule.ts`).
+(see `Schedule.ts`). The recalculation also **preserves completion flags** for
+activities that survive into the new plan — so if you've already marked
+"Breakfast" as Done at 7:00 and then add a busy block at 14:00, breakfast stays
+checked even though the rest of the day re-shuffles.
 
 ---
 
 ## License
+
+MIT (academic / project use).
